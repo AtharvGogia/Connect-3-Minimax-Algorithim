@@ -62,7 +62,7 @@ export default function App() {
 
     setIsThinking(true);
     setBestMove(null);
-    addLog('AI Gold is calculating optimal move...', 'info');
+    addLog('Running Algorithm...', 'info');
     resetNodeCounter();
     
     const generator = minimaxGenerator(
@@ -82,7 +82,7 @@ export default function App() {
       if (done) {
         finalResult = value;
         if (finalResult.move) {
-          addLog(`AI Gold decided on move (${finalResult.move.row}, ${finalResult.move.col}) with score ${finalResult.score}`, 'decision');
+          addLog(`Algorithm decided on move (${finalResult.move.row}, ${finalResult.move.col}) with score ${finalResult.score}`, 'decision');
           setBestMove(finalResult.move);
           
           // Delay the actual move to let the user see the result in the tree
@@ -146,22 +146,22 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-white">
       {/* Persistent Title Bar */}
-      <header className="flex-shrink-0 h-16 border-b border-black/5 px-6 flex items-center justify-between bg-white z-50">
+      <header className="flex-shrink-0 h-16 border-b border-black/20 px-6 flex items-center justify-between bg-white z-50">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
             <h1 className="text-sm font-mono font-bold uppercase tracking-[0.3em] text-black">Connect 3</h1>
-            <span className="text-[9px] font-mono text-black/40 uppercase tracking-widest">Minimax Algorithim</span>
+            <span className="text-[9px] font-mono text-black/70 uppercase tracking-widest">Minimax Algorithm</span>
           </div>
-          <div className="h-4 w-[1px] bg-black/10 mx-2" />
+          <div className="h-4 w-[1px] bg-black/20 mx-2" />
           <div className="flex items-center gap-2">
             <div className={cn(
               "w-2 h-2 rounded-full",
-              gameState.winner ? "bg-green-500" : (isThinking ? "bg-amber-500 animate-pulse" : "bg-blue-500")
+              gameState.winner ? "bg-green-600" : (isThinking ? "bg-amber-600 animate-pulse" : "bg-blue-600")
             )} />
-            <span className="text-[10px] font-mono text-black/60 uppercase tracking-widest">
+            <span className="text-[10px] font-mono text-black/90 uppercase tracking-widest">
               {gameState.winner === 'DRAW' 
                 ? "Draw" 
-                : (gameState.winner ? `${gameState.winner} Wins!` : (isThinking ? "AI Calculating..." : `${gameState.currentPlayer}'s Turn`))
+                : (gameState.winner ? `${gameState.winner} Wins!` : (isThinking ? "Running Algorithm..." : `${gameState.currentPlayer}'s Turn`))
               }
             </span>
           </div>
@@ -179,7 +179,7 @@ export default function App() {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        {/* Left Side: Game Board & Logs */}
+        {/* Left Side: Game Board */}
         <div className="flex-1 relative flex flex-col min-w-0">
           <div className="flex-1 min-h-0">
             <GameBoard 
@@ -188,23 +188,39 @@ export default function App() {
               isThinking={isThinking} 
             />
           </div>
+          
+          {/* Credits Footer */}
+          <div className="p-4 flex-shrink-0 bg-white border-t border-black/20">
+            <div className="space-y-1">
+              <p className="text-[9px] font-mono text-black/50 uppercase tracking-widest mb-1">Developed By</p>
+              <p className="text-[10px] font-mono text-black/90">Atharv Gogia - RA2411003010944</p>
+              <p className="text-[10px] font-mono text-black/90">Vedant Panchal - RA2411003010934</p>
+              <p className="text-[10px] font-mono text-black/90">Alveera Singh Sood - RA2411003010927</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Tree Visualization & Logs */}
+        <div className="w-[45%] h-full border-l border-black/20 flex flex-col">
+          <div className="flex-1 min-h-0">
+            <TreeVisualization data={treeData} isThinking={isThinking} bestMove={bestMove} />
+          </div>
 
           {/* Log Console */}
           <div className={cn(
-            "flex-shrink-0 bg-black border-t border-white/10 transition-all duration-300 overflow-hidden",
-            isLogsCollapsed ? "h-10" : "h-48"
+            "flex-shrink-0 bg-black border-t border-white/20 transition-all duration-300 overflow-hidden",
+            isLogsCollapsed ? "h-10" : "h-64"
           )}>
             <div 
-              className="flex items-center justify-between p-3 border-b border-white/5 cursor-pointer hover:bg-white/5"
+              className="flex items-center justify-between p-3 border-b border-white/10 cursor-pointer hover:bg-white/10"
               onClick={() => setIsLogsCollapsed(!isLogsCollapsed)}
             >
               <div className="flex items-center gap-2">
-                <span className="text-white/40 uppercase tracking-widest text-[10px]">System Logs</span>
+                <span className="text-white/70 uppercase tracking-widest text-[10px]">System Logs</span>
                 {isThinking && <div className="w-1 h-1 rounded-full bg-amber-400 animate-pulse" />}
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-white/20 text-[10px]">v1.1.0</span>
-                <div className="text-white/40">
+                <div className="text-white/60">
                   {isLogsCollapsed ? <Layers size={12} /> : <Grid2X2 size={12} />}
                 </div>
               </div>
@@ -213,35 +229,20 @@ export default function App() {
               <div className="space-y-1">
                 {logs.map(log => (
                   <div key={log.id} className="flex gap-3">
-                    <span className="text-white/20">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                    <span className="text-white/40">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
                     <span className={cn(
                       log.type === 'decision' ? "text-amber-400" : 
-                      log.type === 'prune' ? "text-amber-400/40" : 
-                      "text-white/60"
+                      log.type === 'prune' ? "text-amber-400/60" : 
+                      "text-white/90"
                     )}>
                       {log.message}
                     </span>
                   </div>
                 ))}
-                {logs.length === 0 && <div className="text-white/10 italic">Waiting for input...</div>}
+                {logs.length === 0 && <div className="text-white/30 italic">Waiting for input...</div>}
               </div>
             </div>
           </div>
-          
-          {/* Credits Footer */}
-          <div className="p-4 flex-shrink-0 bg-white border-t border-black/5">
-            <div className="space-y-1">
-              <p className="text-[9px] font-mono text-black/20 uppercase tracking-widest mb-1">Developed By</p>
-              <p className="text-[10px] font-mono text-black/60">Atharv Gogia - RA2411003010944</p>
-              <p className="text-[10px] font-mono text-black/60">Vedant Panchal - RA2411003010934</p>
-              <p className="text-[10px] font-mono text-black/60">Alveera Singh Sood - RA2411003010927</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Tree Visualization */}
-        <div className="w-[45%] h-full">
-          <TreeVisualization data={treeData} isThinking={isThinking} bestMove={bestMove} />
         </div>
       </div>
     </div>

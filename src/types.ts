@@ -9,6 +9,7 @@ export interface GameState {
   grid: Player[][];
   currentPlayer: Player;
   winner: Player | 'DRAW' | null;
+  winningCells?: { row: number; col: number }[];
   size: number;
   connectToWin: number;
 }

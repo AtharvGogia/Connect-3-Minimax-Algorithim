@@ -89,8 +89,8 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       .attr('y', d => d * zoneHeight - zoneHeight / 2)
       .attr('width', 20000)
       .attr('height', zoneHeight)
-      .attr('fill', d => d % 2 === 0 ? '#ffffff' : '#f3f4f6') // White for MAX, Light Grey for MIN
-      .attr('opacity', 0.5);
+      .attr('fill', d => d % 2 === 0 ? '#ffffff' : '#e5e7eb') // White for MAX, Gray-200 for MIN
+      .attr('opacity', 0.6);
 
     // Level Labels (MAX/MIN)
     const levels = Array.from(new Set(root.descendants().map(d => d.depth)));
@@ -102,10 +102,10 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       .attr('y', d => d * 150)
       .attr('dy', '0.35em')
       .attr('class', 'font-mono font-bold text-[14px]')
-      .attr('fill', d => d % 2 === 0 ? '#000000' : '#4b5563')
-      .text(d => d % 2 === 0 ? "AI'S TURN (MAX)" : "YOUR TURN (MIN)");
+      .attr('fill', d => d % 2 === 0 ? '#000000' : '#1f2937')
+      .text(d => d % 2 === 0 ? "MAX" : "MIN");
 
-    // Links
+      // Links
     g.selectAll('.link')
       .data(root.links())
       .enter()
@@ -117,9 +117,9 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       )
       .attr('fill', 'none')
       .attr('stroke', '#000000')
-      .attr('stroke-width', d => (d.target.data.isActive || d.source.data.isActive) ? 1.5 : 1)
+      .attr('stroke-width', d => (d.target.data.isActive || d.source.data.isActive) ? 2 : 1.5)
       .attr('stroke-dasharray', d => d.target.data.isPruned ? '5,5' : 'none')
-      .attr('opacity', d => d.target.data.isPruned ? 0.2 : 1);
+      .attr('opacity', d => d.target.data.isPruned ? 0.4 : 1);
 
     // Nodes
     const nodes = g.selectAll('.node')
@@ -238,22 +238,22 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
   }, [data, isThinking, bestMove]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-[#ffffff] overflow-hidden border-l border-black/10">
+    <div ref={containerRef} className="relative w-full h-full bg-[#ffffff] overflow-hidden border-l border-black/20">
       {/* Heading */}
-      <div className="absolute top-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-b border-black/5 z-10 flex justify-between items-center">
-        <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/60">Minimax Decision Tree</h3>
+      <div className="absolute top-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-b border-black/10 z-10 flex justify-between items-center">
+        <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/80">Minimax Tree</h3>
         <div className="flex gap-4">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full border border-black bg-white" />
-            <span className="text-[9px] font-mono text-black/40 uppercase">Internal</span>
+            <span className="text-[9px] font-mono text-black/60 uppercase">Internal</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-md bg-[#fbbf24]" />
-            <span className="text-[9px] font-mono text-black/40 uppercase">Leaf (Value)</span>
+            <div className="w-3 h-3 rounded-md bg-[#fbbf24] border border-amber-600" />
+            <span className="text-[9px] font-mono text-black/60 uppercase">Leaf (Value)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-[9px] font-mono text-black/40 uppercase">Optimal Move</span>
+            <div className="w-3 h-3 rounded-full bg-green-600" />
+            <span className="text-[9px] font-mono text-black/60 uppercase">Optimal Move</span>
           </div>
         </div>
       </div>
@@ -265,13 +265,13 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
           <div className="flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-md border border-black/10 rounded-full shadow-lg">
             <div className={cn("w-2 h-2 rounded-full", bestMove ? "bg-green-500" : "bg-amber-500 animate-pulse")} />
             <span className={cn("text-[10px] font-mono uppercase tracking-widest font-bold leading-none", bestMove ? "text-green-600" : "text-amber-600")}>
-              {bestMove ? "Optimal Move Found" : "AI Thinking..."}
+              {bestMove ? "Optimal Move Found" : "Running Algorithm..."}
             </span>
           </div>
           {!bestMove && (
             <div className="px-3 py-1 bg-black/5 backdrop-blur-sm border border-black/5 rounded-full self-start flex items-center justify-center">
               <span className="text-[9px] font-mono text-black/40 uppercase tracking-tighter leading-none">
-                Analyzing Search Tree...
+                Analyzing Tree...
               </span>
             </div>
           )}
@@ -305,8 +305,8 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 text-[10px] font-mono text-black/10 uppercase tracking-[0.3em] select-none">
-        Strategic Search Tree
+      <div className="absolute bottom-4 right-4 text-[10px] font-mono text-black/30 uppercase tracking-[0.3em] select-none">
+        Minimax Tree
       </div>
     </div>
   );

@@ -9,14 +9,30 @@ export function createInitialGrid(size: number): Player[][] {
   return Array(size).fill(null).map(() => Array(size).fill(null));
 }
 
-export function checkWinner(grid: Player[][], connectToWin: number): Player | 'DRAW' | null {
+export interface WinResult {
+  winner: Player | 'DRAW';
+  cells?: { row: number; col: number }[];
+}
+
+export function checkWinner(grid: Player[][], connectToWin: number): WinResult | null {
   const size = grid.length;
 
   // Check rows
   for (let r = 0; r < size; r++) {
     for (let c = 0; c <= size - connectToWin; c++) {
       const p = grid[r][c];
-      if (p && grid[r].slice(c, c + connectToWin).every(cell => cell === p)) return p;
+      if (p) {
+        let win = true;
+        const cells = [{ row: r, col: c }];
+        for (let i = 1; i < connectToWin; i++) {
+          if (grid[r][c + i] !== p) {
+            win = false;
+            break;
+          }
+          cells.push({ row: r, col: c + i });
+        }
+        if (win) return { winner: p, cells };
+      }
     }
   }
 
@@ -26,13 +42,15 @@ export function checkWinner(grid: Player[][], connectToWin: number): Player | 'D
       const p = grid[r][c];
       if (p) {
         let win = true;
+        const cells = [{ row: r, col: c }];
         for (let i = 1; i < connectToWin; i++) {
           if (grid[r + i][c] !== p) {
             win = false;
             break;
           }
+          cells.push({ row: r + i, col: c });
         }
-        if (win) return p;
+        if (win) return { winner: p, cells };
       }
     }
   }
@@ -43,13 +61,15 @@ export function checkWinner(grid: Player[][], connectToWin: number): Player | 'D
       const p = grid[r][c];
       if (p) {
         let win = true;
+        const cells = [{ row: r, col: c }];
         for (let i = 1; i < connectToWin; i++) {
           if (grid[r + i][c + i] !== p) {
             win = false;
             break;
           }
+          cells.push({ row: r + i, col: c + i });
         }
-        if (win) return p;
+        if (win) return { winner: p, cells };
       }
     }
   }
@@ -59,28 +79,30 @@ export function checkWinner(grid: Player[][], connectToWin: number): Player | 'D
       const p = grid[r][c];
       if (p) {
         let win = true;
+        const cells = [{ row: r, col: c }];
         for (let i = 1; i < connectToWin; i++) {
           if (grid[r - i][c + i] !== p) {
             win = false;
             break;
           }
+          cells.push({ row: r - i, col: c + i });
         }
-        if (win) return p;
+        if (win) return { winner: p, cells };
       }
     }
   }
 
   // Check draw
-  if (grid.every(row => row.every(cell => cell !== null))) return 'DRAW';
+  if (grid.every(row => row.every(cell => cell !== null))) return { winner: 'DRAW' };
 
   return null;
 }
 
 export function evaluate(grid: Player[][], connectToWin: number): number {
-  const winner = checkWinner(grid, connectToWin);
-  if (winner === 'GOLD') return 1000;
-  if (winner === 'BLUE') return -1000;
-  if (winner === 'DRAW') return 0;
+  const result = checkWinner(grid, connectToWin);
+  if (result?.winner === 'GOLD') return 1000;
+  if (result?.winner === 'BLUE') return -1000;
+  if (result?.winner === 'DRAW') return 0;
 
   let score = 0;
   const size = grid.length;

@@ -1,15 +1,17 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
 
 @theme {
   --font-serif: "Cormorant Garamond", serif;
   --font-mono: "JetBrains Mono", monospace;
+  --color-brand-blue: #3b82f6;
+  --color-brand-gold: #fbbf24;
+  --color-soft-blue: #eff6ff;
+  --color-soft-gold: #fffbeb;
 }
 
 @layer base {
   body {
-    @apply bg-white text-black antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
   }
 }
 
