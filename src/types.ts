@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 export type Player = 'BLUE' | 'GOLD' | null;
 
 export interface GameState {

@@ -1,20 +1,15 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { Player, GameState, TreeNode } from '../types';
 
 export function createInitialGrid(size: number): Player[][] {
   return Array(size).fill(null).map(() => Array(size).fill(null));
 }
 
-export interface WinResult {
-  winner: Player | 'DRAW';
-  cells?: { row: number; col: number }[];
+export interface WinnerInfo {
+  winner: Player | 'DRAW' | null;
+  winningCells?: { row: number; col: number }[];
 }
 
-export function checkWinner(grid: Player[][], connectToWin: number): WinResult | null {
+export function checkWinner(grid: Player[][], connectToWin: number): WinnerInfo {
   const size = grid.length;
 
   // Check rows
@@ -31,7 +26,7 @@ export function checkWinner(grid: Player[][], connectToWin: number): WinResult |
           }
           cells.push({ row: r, col: c + i });
         }
-        if (win) return { winner: p, cells };
+        if (win) return { winner: p, winningCells: cells };
       }
     }
   }
@@ -50,7 +45,7 @@ export function checkWinner(grid: Player[][], connectToWin: number): WinResult |
           }
           cells.push({ row: r + i, col: c });
         }
-        if (win) return { winner: p, cells };
+        if (win) return { winner: p, winningCells: cells };
       }
     }
   }
@@ -69,7 +64,7 @@ export function checkWinner(grid: Player[][], connectToWin: number): WinResult |
           }
           cells.push({ row: r + i, col: c + i });
         }
-        if (win) return { winner: p, cells };
+        if (win) return { winner: p, winningCells: cells };
       }
     }
   }
@@ -87,7 +82,7 @@ export function checkWinner(grid: Player[][], connectToWin: number): WinResult |
           }
           cells.push({ row: r - i, col: c + i });
         }
-        if (win) return { winner: p, cells };
+        if (win) return { winner: p, winningCells: cells };
       }
     }
   }
@@ -95,27 +90,25 @@ export function checkWinner(grid: Player[][], connectToWin: number): WinResult |
   // Check draw
   if (grid.every(row => row.every(cell => cell !== null))) return { winner: 'DRAW' };
 
-  return null;
+  return { winner: null };
 }
 
 export function evaluate(grid: Player[][], connectToWin: number): number {
-  const result = checkWinner(grid, connectToWin);
-  if (result?.winner === 'GOLD') return 1000;
-  if (result?.winner === 'BLUE') return -1000;
-  if (result?.winner === 'DRAW') return 0;
+  const { winner } = checkWinner(grid, connectToWin);
+  if (winner === 'GOLD') return 10000;
+  if (winner === 'BLUE') return -10000;
+  if (winner === 'DRAW') return 0;
 
   let score = 0;
   const size = grid.length;
 
-  // Simple heuristic: count open lines of connectToWin-1
+  // Heuristic: count potential lines
   const checkLine = (line: Player[]) => {
     let goldCount = 0;
     let blueCount = 0;
-    let emptyCount = 0;
     for (const cell of line) {
       if (cell === 'GOLD') goldCount++;
       else if (cell === 'BLUE') blueCount++;
-      else emptyCount++;
     }
     if (goldCount > 0 && blueCount === 0) return Math.pow(10, goldCount);
     if (blueCount > 0 && goldCount === 0) return -Math.pow(10, blueCount);
@@ -170,7 +163,7 @@ export function* minimaxGenerator(
   move?: { row: number; col: number }
 ): Generator<TreeNode, { score: number; move?: { row: number; col: number } }, any> {
   const nodeId = `node-${nodeIdCounter++}`;
-  const winner = checkWinner(grid, connectToWin);
+  const { winner } = checkWinner(grid, connectToWin);
   
   const node: TreeNode = {
     id: nodeId,
@@ -200,6 +193,13 @@ export function* minimaxGenerator(
       if (grid[r][c] === null) moves.push({ row: r, col: c });
     }
   }
+
+  // Move ordering: try center first for better pruning
+  moves.sort((a, b) => {
+    const distA = Math.abs(a.row - size/2) + Math.abs(a.col - size/2);
+    const distB = Math.abs(b.row - size/2) + Math.abs(b.col - size/2);
+    return distA - distB;
+  });
 
   if (isMaximizing) {
     let maxEval = -Infinity;

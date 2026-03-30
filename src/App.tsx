@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GameBoard } from './components/GameBoard';
 import { TreeVisualization } from './components/TreeVisualization';
@@ -17,8 +12,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function App() {
-  const [size] = useState<3>(3);
-  const depth = 3; // Fixed depth
+  const [size, setSize] = useState<number>(3);
   const [gameState, setGameState] = useState<GameState>({
     grid: createInitialGrid(3),
     currentPlayer: 'BLUE',
@@ -31,7 +25,7 @@ export default function App() {
   const [bestMove, setBestMove] = useState<{ row: number; col: number } | null>(null);
   const [isLogsCollapsed, setIsLogsCollapsed] = useState(false);
   const [logs, setLogs] = useState<{ id: string; message: string; type: 'info' | 'decision' | 'prune' }[]>([]);
-  const aiMoveRef = useRef<number | null>(null);
+  const algorithmMoveRef = useRef<number | null>(null);
 
   const addLog = (message: string, type: 'info' | 'decision' | 'prune' = 'info') => {
     setLogs(prev => [{ id: Math.random().toString(36).substr(2, 9), message, type }, ...prev].slice(0, 50));
@@ -43,7 +37,7 @@ export default function App() {
     const newGrid = gameState.grid.map(r => [...r]);
     newGrid[row][col] = gameState.currentPlayer;
 
-    const winner = checkWinner(newGrid, gameState.connectToWin);
+    const { winner, winningCells } = checkWinner(newGrid, gameState.connectToWin);
     
     if (gameState.currentPlayer === 'BLUE') {
       addLog(`Player Blue placed at (${row}, ${col})`);
@@ -54,10 +48,11 @@ export default function App() {
       grid: newGrid,
       currentPlayer: winner ? prev.currentPlayer : (prev.currentPlayer === 'BLUE' ? 'GOLD' : 'BLUE'),
       winner,
+      winningCells,
     }));
   }, [gameState, isThinking]);
 
-  const aiMove = useCallback(async () => {
+  const algorithmMove = useCallback(async () => {
     if (gameState.winner || gameState.currentPlayer !== 'GOLD') return;
 
     setIsThinking(true);
@@ -65,9 +60,15 @@ export default function App() {
     addLog('Running Algorithm...', 'info');
     resetNodeCounter();
     
+    // Dynamic depth based on grid size
+    const maxDepth = size;
+    const stepSpeed = size === 3 ? 2 : size === 4 ? 1 : 0.5;
+    const startTime = Date.now();
+    const TIMEOUT_MS = 4000;
+
     const generator = minimaxGenerator(
       gameState.grid,
-      depth,
+      maxDepth,
       -Infinity,
       Infinity,
       true,
@@ -79,23 +80,26 @@ export default function App() {
 
     const step = () => {
       const { value, done } = generator.next();
+      
+      // Check for timeout
+      const elapsed = Date.now() - startTime;
+      if (elapsed > TIMEOUT_MS && !done) {
+        // Force completion if taking too long
+        let lastVal = value;
+        let isDone = done;
+        while (!isDone) {
+          const next = generator.next();
+          lastVal = next.value;
+          isDone = next.done;
+        }
+        finalResult = lastVal;
+        handleFinalDecision(finalResult);
+        return;
+      }
+
       if (done) {
         finalResult = value;
-        if (finalResult.move) {
-          addLog(`Algorithm decided on move (${finalResult.move.row}, ${finalResult.move.col}) with score ${finalResult.score}`, 'decision');
-          setBestMove(finalResult.move);
-          
-          // Delay the actual move to let the user see the result in the tree
-          window.setTimeout(() => {
-            if (finalResult.move) {
-              handleMove(finalResult.move.row, finalResult.move.col);
-            }
-            setIsThinking(false);
-          }, 1500);
-        } else {
-          setIsThinking(false);
-        }
-        aiMoveRef.current = null;
+        handleFinalDecision(finalResult);
         return;
       }
       lastTree = value as TreeNode;
@@ -112,29 +116,47 @@ export default function App() {
       if (lastTree) findPrunes(lastTree);
 
       setTreeData(lastTree);
-      aiMoveRef.current = window.setTimeout(step, 5);
+      algorithmMoveRef.current = window.setTimeout(step, stepSpeed);
     };
 
-    aiMoveRef.current = window.setTimeout(step, 5);
-  }, [gameState, depth, handleMove, logs]);
+    const handleFinalDecision = (result: any) => {
+      if (result.move) {
+        addLog(`Algorithm decided on move (${result.move.row}, ${result.move.col}) with score ${result.score}`, 'decision');
+        setBestMove(result.move);
+        
+        window.setTimeout(() => {
+          if (result.move) {
+            handleMove(result.move.row, result.move.col);
+          }
+          setIsThinking(false);
+        }, 100);
+      } else {
+        setIsThinking(false);
+      }
+      algorithmMoveRef.current = null;
+    };
+
+    algorithmMoveRef.current = window.setTimeout(step, stepSpeed);
+  }, [gameState, size, handleMove, logs]);
 
   useEffect(() => {
     if (gameState.currentPlayer === 'GOLD' && !gameState.winner && !isThinking) {
-      aiMove();
+      algorithmMove();
     }
-  }, [gameState.currentPlayer, gameState.winner, isThinking, aiMove]);
+  }, [gameState.currentPlayer, gameState.winner, isThinking, algorithmMove]);
 
   const resetGame = () => {
-    if (aiMoveRef.current) {
-      window.clearTimeout(aiMoveRef.current);
-      aiMoveRef.current = null;
+    if (algorithmMoveRef.current) {
+      window.clearTimeout(algorithmMoveRef.current);
+      algorithmMoveRef.current = null;
     }
     setGameState({
-      grid: createInitialGrid(3),
+      grid: createInitialGrid(size),
       currentPlayer: 'BLUE',
       winner: null,
-      size: 3,
-      connectToWin: 3,
+      winningCells: undefined,
+      size: size,
+      connectToWin: size === 3 ? 3 : 4,
     });
     setTreeData(null);
     setBestMove(null);
@@ -149,9 +171,44 @@ export default function App() {
       <header className="flex-shrink-0 h-16 border-b border-black/20 px-6 flex items-center justify-between bg-white z-50">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <h1 className="text-sm font-mono font-bold uppercase tracking-[0.3em] text-black">Connect 3</h1>
+            <h1 className="text-sm font-mono font-bold uppercase tracking-[0.3em] text-black">Connect X</h1>
             <span className="text-[9px] font-mono text-black/70 uppercase tracking-widest">Minimax Algorithm</span>
           </div>
+          <div className="h-4 w-[1px] bg-black/20 mx-2" />
+          
+          {/* Grid Size Selector */}
+          <div className="flex items-center gap-1 bg-black/[0.03] p-1 rounded-lg border border-black/5">
+            {[3, 4, 5].map(s => (
+              <button
+                key={s}
+                onClick={() => {
+                  if (!isThinking) {
+                    setSize(s);
+                    setGameState({
+                      grid: createInitialGrid(s),
+                      currentPlayer: 'BLUE',
+                      winner: null,
+                      winningCells: undefined,
+                      size: s,
+                      connectToWin: s === 3 ? 3 : 4,
+                    });
+                    setTreeData(null);
+                    setBestMove(null);
+                    setLogs([]);
+                    addLog(`Grid resized to ${s}x${s}. Player Blue to start.`);
+                  }
+                }}
+                disabled={isThinking}
+                className={cn(
+                  "px-3 py-1 text-[10px] font-mono rounded-md transition-all",
+                  size === s ? "bg-black text-white shadow-lg" : "text-black/40 hover:bg-black/5"
+                )}
+              >
+                {s}x{s}
+              </button>
+            ))}
+          </div>
+
           <div className="h-4 w-[1px] bg-black/20 mx-2" />
           <div className="flex items-center gap-2">
             <div className={cn(
