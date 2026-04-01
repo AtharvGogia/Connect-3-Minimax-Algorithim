@@ -1,0 +1,65 @@
+CONNECT X: TECHNICAL PROJECT EXPLANATION
+=======================================
+
+1. PROJECT OVERVIEW
+-------------------
+Connect X is a real-time visualization platform for Adversarial Search algorithms. It implements a generalized "Connect K" game on N x N grids (3x3, 4x4, 5x5), allowing users to observe the decision-making process of an AI agent powered by Minimax and Alpha-Beta Pruning.
+
+2. FORMAL GAME DEFINITION (UNIT III CONCEPTS)
+---------------------------------------------
+The game is modeled as a formal search problem with the following elements:
+- Initial State (S0): An empty N x N grid.
+- PLAYER(s): MAX (AI - Gold) and MIN (Human - Blue).
+- ACTIONS(s): The set of all empty cells where a token can be placed.
+- RESULT(s, a): The transition model returning the new grid state after move 'a'.
+- TERMINAL-TEST(s): A check to determine if a player has aligned X tokens or if the grid is full (Draw).
+- UTILITY(s, p): The payoff function (+10,000 for MAX win, -10,000 for MIN win, 0 for Draw).
+
+3. THE MINIMAX ALGORITHM
+------------------------
+A recursive strategy used in deterministic, zero-sum games to find the optimal move.
+- Logic: MAX tries to maximize the utility, while MIN tries to minimize it.
+- Depth-Limited Search: The algorithm explores up to 5 levels deep (5-ply) to balance look-ahead intelligence with real-time rendering speed.
+- Backpropagation: Values from leaf nodes (evaluated by the heuristic) are passed up to the root to determine the best immediate move.
+
+4. ALPHA-BETA PRUNING (OPTIMIZATION)
+------------------------------------
+An optimization technique that reduces the number of nodes evaluated by the Minimax algorithm without changing the final decision.
+- Thresholds: 
+    * Alpha (α): The best (highest) value MAX is guaranteed so far.
+    * Beta (β): The best (lowest) value MIN is guaranteed so far.
+- Pruning Condition: If at any node α ≥ β, the remaining branches are discarded (pruned).
+- Efficiency: In ideal move ordering, complexity is reduced from O(b^m) to O(b^{m/2}), effectively doubling the searchable depth.
+
+5. HEURISTIC EVALUATION FUNCTION (THE "INTUITION")
+--------------------------------------------------
+Used to estimate the utility of non-terminal states when the search depth limit is reached.
+- Window Scanning: The AI scans every possible horizontal, vertical, and diagonal line of length 'K'.
+- Exponential Scoring (10^n):
+    * Blocked Lines: 0 points (contains both Gold and Blue).
+    * AI Potential: +10^n (where n is the number of Gold tokens in the window).
+    * Human Potential: -10^n (where n is the number of Blue tokens in the window).
+- Goal: This forces the AI to prioritize "near-wins" (3-in-a-row = 1000 pts) over scattered tokens (two 2-in-a-rows = 200 pts).
+
+6. TECHNICAL IMPLEMENTATION
+---------------------------
+- React 18 & TypeScript: Manages the game state, grid rendering, and UI reactivity.
+- D3.js: Handles the hierarchical tree layout, calculating node positions and rendering SVG edges/circles.
+- JavaScript Generators (function*): 
+    * The "Secret Sauce": Standard recursion blocks the browser's main thread. 
+    * Mechanism: We used Generators to 'yield' control back to the UI after every node evaluation. 
+    * Result: Allows the tree to be drawn step-by-step in real-time while keeping the browser responsive.
+- Tailwind CSS: Provides a modern, dark-themed dashboard interface.
+
+7. COMPLEXITY ANALYSIS
+----------------------
+- Time Complexity (Minimax): O(b^m), where b is the branching factor (empty cells) and m is depth.
+- Time Complexity (Alpha-Beta): O(b^{m/2}) with ideal move ordering.
+- Space Complexity: O(bm) due to the recursive stack and tree storage.
+
+8. VISUALIZATION METRICS
+------------------------
+- Glowing Nodes: Current state being evaluated.
+- Dashed Edges (X): Pruned branches that the AI mathematically proved were suboptimal.
+- Green Path: The "Principal Variation"—the sequence of moves the AI expects to happen.
+- System Logs: Real-time console showing Alpha/Beta updates and pruning events.
