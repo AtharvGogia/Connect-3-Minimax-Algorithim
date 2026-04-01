@@ -25,7 +25,7 @@ export default function App() {
   const [bestMove, setBestMove] = useState<{ row: number; col: number } | null>(null);
   const [isLogsCollapsed, setIsLogsCollapsed] = useState(false);
   const [logs, setLogs] = useState<{ id: string; message: string; type: 'info' | 'decision' | 'prune' }[]>([]);
-  const algorithmMoveRef = useRef<number | null>(null);
+  const computerMoveRef = useRef<number | null>(null);
 
   const addLog = (message: string, type: 'info' | 'decision' | 'prune' = 'info') => {
     setLogs(prev => [{ id: Math.random().toString(36).substr(2, 9), message, type }, ...prev].slice(0, 50));
@@ -52,17 +52,23 @@ export default function App() {
     }));
   }, [gameState, isThinking]);
 
-  const algorithmMove = useCallback(async () => {
+  /**
+   * computerMove: Initiates the Minimax search process for the GOLD player.
+   * It uses a generator-based approach to allow for step-by-step visualization 
+   * of the search tree without blocking the main UI thread.
+   */
+  const computerMove = useCallback(async () => {
     if (gameState.winner || gameState.currentPlayer !== 'GOLD') return;
 
     setIsThinking(true);
     setBestMove(null);
-    addLog('Running Algorithm...', 'info');
+    addLog('Starting Minimax search...', 'info');
     resetNodeCounter();
     
-    // Dynamic depth based on grid size
-    const maxDepth = size;
-    const stepSpeed = size === 3 ? 2 : size === 4 ? 1 : 0.5;
+    // Search depth is fixed at 5 to provide a consistent level of play 
+    // and a manageable visualization tree.
+    const maxDepth = 5;
+    const stepSpeed = size === 3 ? 1 : size === 4 ? 0.5 : 0.2;
     const startTime = Date.now();
     const TIMEOUT_MS = 4000;
 
@@ -78,13 +84,15 @@ export default function App() {
     let lastTree: TreeNode | null = null;
     let finalResult: any;
 
+    /**
+     * step: Processes one node in the search tree and schedules the next step.
+     */
     const step = () => {
       const { value, done } = generator.next();
       
-      // Check for timeout
+      // Safety timeout to prevent the search from running indefinitely
       const elapsed = Date.now() - startTime;
       if (elapsed > TIMEOUT_MS && !done) {
-        // Force completion if taking too long
         let lastVal = value;
         let isDone = done;
         while (!isDone) {
@@ -104,7 +112,7 @@ export default function App() {
       }
       lastTree = value as TreeNode;
       
-      // Check for new prunes to log
+      // Log pruning events to help explain the Alpha-Beta optimization
       const findPrunes = (node: TreeNode) => {
         node.children.forEach(child => {
           if (child.isPruned && !logs.some(l => l.message.includes(`Pruned branch at (${child.move?.row}, ${child.move?.col})`))) {
@@ -116,12 +124,15 @@ export default function App() {
       if (lastTree) findPrunes(lastTree);
 
       setTreeData(lastTree);
-      algorithmMoveRef.current = window.setTimeout(step, stepSpeed);
+      computerMoveRef.current = window.setTimeout(step, stepSpeed);
     };
 
+    /**
+     * handleFinalDecision: Applies the best move found by the algorithm.
+     */
     const handleFinalDecision = (result: any) => {
       if (result.move) {
-        addLog(`Algorithm decided on move (${result.move.row}, ${result.move.col}) with score ${result.score}`, 'decision');
+        addLog(`Minimax decided on move (${result.move.row}, ${result.move.col}) with score ${result.score}`, 'decision');
         setBestMove(result.move);
         
         window.setTimeout(() => {
@@ -133,22 +144,22 @@ export default function App() {
       } else {
         setIsThinking(false);
       }
-      algorithmMoveRef.current = null;
+      computerMoveRef.current = null;
     };
 
-    algorithmMoveRef.current = window.setTimeout(step, stepSpeed);
+    computerMoveRef.current = window.setTimeout(step, stepSpeed);
   }, [gameState, size, handleMove, logs]);
 
   useEffect(() => {
     if (gameState.currentPlayer === 'GOLD' && !gameState.winner && !isThinking) {
-      algorithmMove();
+      computerMove();
     }
-  }, [gameState.currentPlayer, gameState.winner, isThinking, algorithmMove]);
+  }, [gameState.currentPlayer, gameState.winner, isThinking, computerMove]);
 
   const resetGame = () => {
-    if (algorithmMoveRef.current) {
-      window.clearTimeout(algorithmMoveRef.current);
-      algorithmMoveRef.current = null;
+    if (computerMoveRef.current) {
+      window.clearTimeout(computerMoveRef.current);
+      computerMoveRef.current = null;
     }
     setGameState({
       grid: createInitialGrid(size),
@@ -218,7 +229,7 @@ export default function App() {
             <span className="text-[10px] font-mono text-black/90 uppercase tracking-widest">
               {gameState.winner === 'DRAW' 
                 ? "Draw" 
-                : (gameState.winner ? `${gameState.winner} Wins!` : (isThinking ? "Running Algorithm..." : `${gameState.currentPlayer}'s Turn`))
+                : (gameState.winner ? `${gameState.winner} Wins!` : (isThinking ? "Running Minimax..." : `${gameState.currentPlayer}'s Turn`))
               }
             </span>
           </div>

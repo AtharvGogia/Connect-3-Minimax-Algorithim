@@ -96,7 +96,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, onMove, isThink
             "text-2xl font-serif italic mb-1",
             winner === 'BLUE' ? "text-blue-700" : winner === 'GOLD' ? "text-amber-700" : "text-black/80"
           )}>
-            {winner === 'DRAW' ? "Draw" : `${winner === 'BLUE' ? 'Blue' : 'Gold'} Wins`}
+            {winner === 'DRAW' ? "Draw" : `${winner === 'BLUE' ? 'Blue' : 'Gold'} Dominance`}
           </h2>
           <p className="text-[10px] font-mono text-black/70 uppercase tracking-widest">Game Concluded</p>
         </div>

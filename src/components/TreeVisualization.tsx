@@ -88,6 +88,8 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       .attr('opacity', 0.6);
 
     // Level Labels (MAX/MIN)
+    // In a Minimax tree, levels alternate between the Maximizing player (MAX)
+    // and the Minimizing player (MIN).
     const levels = Array.from(new Set(root.descendants().map(d => d.depth)));
     const levelLabels = g.selectAll('.level-label')
       .data(levels)
@@ -100,7 +102,8 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       .attr('fill', d => d % 2 === 0 ? '#000000' : '#1f2937')
       .text(d => d % 2 === 0 ? "MAX" : "MIN");
 
-      // Links
+      // Links (Edges) between nodes
+      // Solid lines represent explored paths, while dashed lines represent pruned branches.
     g.selectAll('.link')
       .data(root.links())
       .enter()
@@ -116,7 +119,8 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       .attr('stroke-dasharray', d => d.target.data.isPruned ? '5,5' : 'none')
       .attr('opacity', d => d.target.data.isPruned ? 0.4 : 1);
 
-    // Nodes
+    // Nodes in the search tree
+    // Each node represents a potential game state.
     const nodes = g.selectAll('.node')
       .data(root.descendants())
       .enter()
@@ -143,6 +147,7 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
                              d.depth === 1;
 
       // Best move highlight (Green Ring)
+      // This highlights the branch that the algorithm has determined to be optimal.
       if (isBestMoveNode) {
         nodeG.append('circle')
           .attr('r', 35)
@@ -153,6 +158,7 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
       }
 
       // Active node glow
+      // Indicates the node currently being evaluated by the algorithm.
       if (d.data.isActive) {
         nodeG.append('circle')
           .attr('r', 35)
@@ -165,6 +171,7 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
 
       if (isLeaf && !d.data.isPruned) {
         // Square leaf nodes
+        // These represent the "end" of a search branch where a heuristic score is calculated.
         nodeG.append('rect')
           .attr('x', -25)
           .attr('y', -25)
@@ -183,6 +190,7 @@ export const TreeVisualization: React.FC<TreeVisualizationProps> = ({ data, isTh
           .text(d.data.score !== undefined ? d.data.score : '?');
       } else {
         // Circular internal nodes
+        // These represent intermediate game states where the algorithm chooses the best child.
         nodeG.append('circle')
           .attr('r', 25)
           .attr('fill', isBestMoveNode ? '#22c55e' : 'white')

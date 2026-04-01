@@ -1,5 +1,5 @@
 {
-  "name": "Connect 3",
+  "name": "Connect X",
   "description": "A high-fidelity interactive grid-based game featuring a real-time Minimax Alpha-Beta pruning tree visualization.",
   "requestFramePermissions": []
 }
